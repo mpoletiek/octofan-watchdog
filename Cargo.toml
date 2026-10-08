@@ -1,0 +1,14 @@
+[package]
+name = "octofan-watchdog"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+description = "Feeds the Octominer fan-controller board's hardware watchdog so a rig without OctOS/HiveOS is not reset every 25 minutes."
+publish = false
+
+[dependencies]
+libc = "0.2"
+
+[profile.release]
+strip = true
+lto = true

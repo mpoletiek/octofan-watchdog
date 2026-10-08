@@ -1,0 +1,35 @@
+[Unit]
+Description=Feed the Octominer fan-controller board's hardware watchdog
+Documentation=file:///usr/local/share/doc/octofan-watchdog/README.md
+# Start early: the board resets the rig 25 minutes after power-on unless fed.
+DefaultDependencies=no
+After=systemd-udevd.service
+Before=multi-user.target shutdown.target
+Conflicts=shutdown.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/octofan-watchdog run --interval 10
+Restart=always
+RestartSec=5
+
+# It only needs the board's USB node.
+DevicePolicy=closed
+DeviceAllow=char-usb_device rw
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateNetwork=no
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+SystemCallArchitectures=native
+CapabilityBoundingSet=CAP_DAC_OVERRIDE
+
+[Install]
+WantedBy=multi-user.target
