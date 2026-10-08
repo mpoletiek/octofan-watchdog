@@ -1,6 +1,7 @@
 [Unit]
 Description=Feed the Octominer fan-controller board's hardware watchdog
 Documentation=file:///usr/local/share/doc/octofan-watchdog/README.md
+Documentation=https://github.com/mpoletiek/octofan-watchdog
 # Start early: the board resets the rig 25 minutes after power-on unless fed.
 DefaultDependencies=no
 After=systemd-udevd.service

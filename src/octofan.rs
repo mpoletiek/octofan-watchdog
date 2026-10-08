@@ -35,7 +35,13 @@ const TIMEOUT_MS: u32 = 5000;
 
 /// The boards on this machine.
 pub fn find() -> Vec<Found> {
-    usb::find(Path::new("/sys/bus/usb/devices"), VID, PID, MANUFACTURER, PRODUCT)
+    usb::find(
+        Path::new("/sys/bus/usb/devices"),
+        VID,
+        PID,
+        MANUFACTURER,
+        PRODUCT,
+    )
 }
 
 /// The watchdog's state as the board reports it.
@@ -86,7 +92,10 @@ pub fn long_index(long_secs: u32) -> Result<u16, String> {
     let s = if long_secs < 60 { 60 } else { long_secs };
     let min = s / 60;
     if min > 0xff {
-        return Err(format!("long timeout {long_secs} s: at most {} s", 0xff * 60));
+        return Err(format!(
+            "long timeout {long_secs} s: at most {} s",
+            0xff * 60
+        ));
     }
     Ok(0x6400 + min as u16)
 }

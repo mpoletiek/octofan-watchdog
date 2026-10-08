@@ -1,0 +1,39 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      TARGET: x86_64-unknown-linux-musl
+      NAME: octofan-watchdog-x86_64-linux
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check the tag matches Cargo.toml
+        run: |
+          version=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)
+          test "${GITHUB_REF_NAME}" = "v${version}" || {
+            echo "tag ${GITHUB_REF_NAME} does not match Cargo.toml version ${version}" >&2
+            exit 1
+          }
+      - run: cargo test
+      - run: rustup target add "$TARGET"
+      - name: Build a static binary
+        run: cargo build --release --locked --target "$TARGET"
+      - name: Package
+        run: |
+          mkdir "$NAME"
+          cp "target/$TARGET/release/octofan-watchdog" dist/install.sh dist/octofan-watchdog.service README.md LICENSE "$NAME/"
+          tar czf "$NAME.tar.gz" "$NAME"
+          sha256sum "$NAME.tar.gz" > "$NAME.tar.gz.sha256"
+          file "$NAME/octofan-watchdog"
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --generate-notes "$NAME.tar.gz" "$NAME.tar.gz.sha256"

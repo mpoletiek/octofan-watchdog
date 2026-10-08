@@ -22,8 +22,9 @@ Usage:
   octofan-watchdog status                 the board and its watchdog state
   octofan-watchdog feed                   feed the watchdog once
   octofan-watchdog set-timeouts SHORT LONG
-                                          set the timeouts (seconds; LONG is
-                                          kept in minutes, 60 s at least)
+                                          set the timeouts (seconds; SHORT 30
+                                          at least; LONG is kept in minutes,
+                                          60 s at least)
   octofan-watchdog run [options]          feed it until stopped (the service)
 
 run options:
@@ -54,13 +55,15 @@ fn open() -> Result<Board, String> {
     Board::open(at).map_err(|e| format!("{}: {e}", node.display()))
 }
 
+/// The shortest short timeout accepted: `run` feeds every 10 s by default,
+/// and a shorter timeout would have the board reset the rig in a loop.
+const MIN_SHORT: u16 = 30;
+
 fn parse_timeouts(s: &str, l: &str) -> Result<(u16, u32), String> {
-    let short: u16 = s
-        .parse()
-        .map_err(|_| format!("bad short timeout {s:?}"))?;
+    let short: u16 = s.parse().map_err(|_| format!("bad short timeout {s:?}"))?;
     let long: u32 = l.parse().map_err(|_| format!("bad long timeout {l:?}"))?;
-    if short == 0 {
-        return Err("the short timeout must be above 0".into());
+    if short < MIN_SHORT {
+        return Err(format!("the short timeout must be {MIN_SHORT} s at least"));
     }
     octofan::long_index(long)?;
     Ok((short, long))
@@ -152,7 +155,11 @@ fn run(cfg: RunConfig) -> Result<(), String> {
         if board.is_none() {
             match open() {
                 Ok(b) => {
-                    log!("board at {} ({})", b.at.node.display(), b.at.sysfs.display());
+                    log!(
+                        "board at {} ({})",
+                        b.at.node.display(),
+                        b.at.sysfs.display()
+                    );
                     match b.status() {
                         Ok(s) => log!("watchdog: {s}"),
                         Err(e) => log!("watchdog status: {e}"),
@@ -237,7 +244,8 @@ fn main() -> ExitCode {
         Some("set-timeouts") => match (args.get(1), args.get(2)) {
             (Some(s), Some(l)) => parse_timeouts(s, l).and_then(|(s, l)| {
                 let b = open()?;
-                b.set_timeouts(s, l).map_err(|e| format!("setting the timeouts: {e}"))?;
+                b.set_timeouts(s, l)
+                    .map_err(|e| format!("setting the timeouts: {e}"))?;
                 println!("timeouts set: short {s} s, long {l} s");
                 Ok(())
             }),
@@ -273,7 +281,10 @@ mod tests {
 
     #[test]
     fn run_options() {
-        let c = parse_run(&args("--interval 5 --check 127.0.0.1:22 --set-timeouts 120,1500")).unwrap();
+        let c = parse_run(&args(
+            "--interval 5 --check 127.0.0.1:22 --set-timeouts 120,1500",
+        ))
+        .unwrap();
         assert_eq!(c.interval, Duration::from_secs(5));
         assert_eq!(c.checks, ["127.0.0.1:22"]);
         assert_eq!(c.timeouts, Some((120, 1500)));
@@ -282,6 +293,8 @@ mod tests {
         assert!(parse_run(&args("--interval 50 --set-timeouts 120,1500")).is_err());
         assert!(parse_run(&args("--interval 0")).is_err());
         assert!(parse_run(&args("--set-timeouts 0,1500")).is_err());
+        assert!(parse_timeouts("29", "1500").is_err());
+        assert_eq!(parse_timeouts("30", "1500"), Ok((30, 1500)));
         assert!(parse_run(&args("--bogus")).is_err());
     }
 

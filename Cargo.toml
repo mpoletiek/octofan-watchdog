@@ -4,6 +4,11 @@ version = "0.1.0"
 edition = "2024"
 rust-version = "1.85"
 description = "Feeds the Octominer fan-controller board's hardware watchdog so a rig without OctOS/HiveOS is not reset every 25 minutes."
+license = "MIT"
+repository = "https://github.com/mpoletiek/octofan-watchdog"
+readme = "README.md"
+keywords = ["octominer", "watchdog", "mining", "usb", "systemd"]
+categories = ["command-line-utilities", "hardware-support"]
 publish = false
 
 [dependencies]

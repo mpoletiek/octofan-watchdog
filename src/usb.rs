@@ -62,9 +62,8 @@ struct CtrlTransfer {
 }
 
 /// `USBDEVFS_CONTROL` = `_IOWR('U', 0, struct usbdevfs_ctrltransfer)`.
-const USBDEVFS_CONTROL: u64 = (3 << 30)
-    | ((std::mem::size_of::<CtrlTransfer>() as u64) << 16)
-    | ((b'U' as u64) << 8);
+const USBDEVFS_CONTROL: u64 =
+    (3 << 30) | ((std::mem::size_of::<CtrlTransfer>() as u64) << 16) | ((b'U' as u64) << 8);
 
 /// An open USB device.
 pub struct Device {
@@ -143,10 +142,23 @@ mod tests {
                 std::fs::write(d.join(k), format!("{v}\n")).unwrap();
             }
         };
-        mk("1-7", "16c0", "05dc", "info@octominer.com", "Fan-Controller", "2");
+        mk(
+            "1-7",
+            "16c0",
+            "05dc",
+            "info@octominer.com",
+            "Fan-Controller",
+            "2",
+        );
         // Same shared ids, another gadget (a USBasp programmer).
         mk("1-3", "16c0", "05dc", "www.fischl.de", "USBasp", "5");
-        let f = find(&root, 0x16c0, 0x05dc, "info@octominer.com", "Fan-Controller");
+        let f = find(
+            &root,
+            0x16c0,
+            0x05dc,
+            "info@octominer.com",
+            "Fan-Controller",
+        );
         std::fs::remove_dir_all(&root).unwrap();
         assert_eq!(f.len(), 1);
         assert_eq!(f[0].node, PathBuf::from("/dev/bus/usb/001/002"));
